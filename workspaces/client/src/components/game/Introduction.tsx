@@ -1,5 +1,5 @@
 import useSocketManager from '@hooks/useSocketManager';
-import { ClientEvents } from '@memory-cards/shared/client/ClientEvents';
+import { ClientEvents } from '@euchre/shared/client/ClientEvents';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { emitEvent } from '@utils/analytics';

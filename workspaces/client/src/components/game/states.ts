@@ -1,6 +1,6 @@
 import { atom } from 'recoil';
-import { ServerPayloads } from '@memory-cards/shared/server/ServerPayloads';
-import { ServerEvents } from '@memory-cards/shared/server/ServerEvents';
+import { ServerPayloads } from '@euchre/shared/server/ServerPayloads';
+import { ServerEvents } from '@euchre/shared/server/ServerEvents';
 
 export const CurrentLobbyState = atom<ServerPayloads[ServerEvents.LobbyState] | null>({
   key: 'CurrentLobbyState',
