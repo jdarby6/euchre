@@ -1,31 +1,50 @@
-import { Cards } from '@shared/common/Cards';
+import { Socket } from 'socket.io';
 import { Lobby } from '@app/game/lobby/lobby';
 import { CardState } from '@app/game/instance/card-state';
 import { ServerException } from '@app/game/server.exception';
-import { SocketExceptions } from '@shared/server/SocketExceptions';
 import { AuthenticatedSocket } from '@app/game/types';
-import { SECOND } from '@app/game/constants';
-import { Socket } from 'socket.io';
+import { Cards } from '@shared/common/Cards';
+import { Player } from '@shared/common/types';
 import { ServerPayloads } from '@shared/server/ServerPayloads';
 import { ServerEvents } from '@shared/server/ServerEvents';
+import { SocketExceptions } from '@shared/server/SocketExceptions';
 
 export class Instance
 {
   public hasStarted: boolean = false;
-
   public hasFinished: boolean = false;
-
   public isSuspended: boolean = false;
-
   public currentRound: number = 1;
-
+  public players: Map<Socket['id'], Player> = new Map<Socket['id'], Player>();
+  public activePlayer: string = '';
+  public currentDealer: string = '';
   public cards: CardState[] = [];
-
   public scores: Record<Socket['id'], number> = {};
 
-  public delayBetweenRounds: number = 2;
-
   private cardsRevealedForCurrentRound: Record<number, Socket['id']> = {};
+
+  /*
+
+  Methods/Rules:
+  - Exactly 4 players
+  - 2 teams of 2 (should these be chosen randomly? or let players choose? maybe option for either)
+  - Teammates sit across from each other (so no two teammates go right after each other)
+  - Shuffle cards
+  - Deal cards (2s and 3s)
+  - Need to maintain who is the dealer
+  - Choosing trump suit phase
+    - Option to go alone
+  - Need to maintain which team were the "makers" (the team that picked the trump suit). Matters for scoring
+  - Player to the left of the dealer starts the first turn
+  - Players have to play a card from that suit if they're able
+  - Need to maintain whose turn it is, and don't let players play out of order
+  - Check for winner (remember trump rules about left and right bower)
+  - Winner of that trick plays the first card for the next round
+  - Once all 5 cards are played, score the round
+  - Dealer passes to the left
+  - Continue playing rounds until one team reaches 10 points
+
+  */
 
   constructor(
     private readonly lobby: Lobby,
@@ -44,7 +63,7 @@ export class Instance
 
     this.lobby.dispatchToLobby<ServerPayloads[ServerEvents.GameMessage]>(ServerEvents.GameMessage, {
       color: 'blue',
-      message: 'Game started !',
+      message: 'Game started!',
     });
   }
 
@@ -58,7 +77,7 @@ export class Instance
 
     this.lobby.dispatchToLobby<ServerPayloads[ServerEvents.GameMessage]>(ServerEvents.GameMessage, {
       color: 'blue',
-      message: 'Game finished !',
+      message: 'Game finished!',
     });
   }
 
@@ -126,58 +145,6 @@ export class Instance
 
   private transitionToNextRound(): void
   {
-    this.isSuspended = true;
-
-    setTimeout(() => {
-      this.isSuspended = false;
-      this.currentRound += 1;
-      this.cardsRevealedForCurrentRound = {};
-
-      // Loop over each card, and see if they have a pair for the same owner,
-      // if so then the card is locked and owner gains a point
-      const cardsRevealed = new Map<Cards, CardState>();
-
-      for (const cardState of this.cards) {
-        if (cardState.isLocked) {
-          continue;
-        }
-
-        if (!cardState.isRevealed) {
-          continue;
-        }
-
-        const previousCard = cardsRevealed.get(cardState.card);
-
-        // We have a pair
-        if (previousCard && previousCard.ownerId === cardState.ownerId) {
-          cardState.isLocked = true;
-          previousCard.isLocked = true;
-
-          // Increment player score
-          this.scores[cardState.ownerId!] = (this.scores[cardState.ownerId!] || 0) + 1;
-        }
-
-        cardsRevealed.set(cardState.card, cardState);
-      }
-
-      // Loop again to hide cards that aren't locked
-      // also check if they're not all locked, would mean game is over
-      let everyCardLocked = true;
-
-      for (const cardState of this.cards) {
-        if (!cardState.isLocked) {
-          cardState.isRevealed = false;
-          cardState.ownerId = null;
-          everyCardLocked = false;
-        }
-      }
-
-      if (everyCardLocked) {
-        this.triggerFinish();
-      }
-
-      this.lobby.dispatchLobbyState();
-    }, SECOND * this.delayBetweenRounds);
   }
 
   private initializeCards(): void
@@ -185,13 +152,10 @@ export class Instance
     // Get only values, not identifiers
     const cards = Object.values(Cards).filter(c => Number.isInteger(c)) as Cards[];
 
-    // Push two time the card into the list, so it makes a pair
     for (const card of cards) {
-      const cardState1 = new CardState(card);
-      const cardState2 = new CardState(card);
+      const cardState = new CardState(card);
 
-      this.cards.push(cardState1);
-      this.cards.push(cardState2);
+      this.cards.push(cardState);
     }
 
     // Shuffle array randomly

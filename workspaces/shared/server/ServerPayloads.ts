@@ -1,15 +1,15 @@
+import { Socket } from 'socket.io';
 import { ServerEvents } from './ServerEvents';
 import { CardStateDefinition } from '../common/types';
 
 export type ServerPayloads = {
   [ServerEvents.LobbyState]: {
     lobbyId: string;
-    mode: 'solo' | 'duo';
-    delayBetweenRounds: number;
     hasStarted: boolean;
     hasFinished: boolean;
     currentRound: number;
-    playersCount: number;
+    activePlayer: string;
+    currentDealer: string;
     cards: CardStateDefinition[];
     isSuspended: boolean;
     scores: Record<string, number>;

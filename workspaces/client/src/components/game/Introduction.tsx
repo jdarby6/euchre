@@ -1,14 +1,15 @@
-import useSocketManager from '@hooks/useSocketManager';
-import { ClientEvents } from '@euchre/shared/client/ClientEvents';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { Divider, TextInput } from '@mantine/core';
+import { useInputState } from '@mantine/hooks';
+import { ClientEvents } from '@euchre/shared/client/ClientEvents';
+import useSocketManager from '@hooks/useSocketManager';
 import { emitEvent } from '@utils/analytics';
-import { Divider, Select } from '@mantine/core';
 
 export default function Introduction() {
   const router = useRouter();
   const {sm} = useSocketManager();
-  const [delayBetweenRounds, setDelayBetweenRounds] = useState<number>(2);
+  const [playerName, setPlayerName] = useInputState<string>('');
 
   useEffect(() => {
     if (router.query.lobby) {
@@ -16,17 +17,17 @@ export default function Introduction() {
         event: ClientEvents.LobbyJoin,
         data: {
           lobbyId: router.query.lobby,
+          playerName: playerName,
         },
       });
     }
   }, [router]);
 
-  const onCreateLobby = (mode: 'solo' | 'duo') => {
+  const onCreateLobby = () => {
     sm.emit({
       event: ClientEvents.LobbyCreate,
       data: {
-        mode: mode,
-        delayBetweenRounds: delayBetweenRounds,
+        playerName: playerName,
       },
     });
 
@@ -35,16 +36,10 @@ export default function Introduction() {
 
   return (
     <div className="mt-4">
-      <h2 className="text-2xl">Hello ! 👋</h2>
+      <h2 className="text-2xl">Hello! 👋</h2>
 
       <p className="mt-3 text-lg">
-        Welcome to a simple game to test your memory against other players or yourself (solo mode).
-        <br/>
-        Reveal cards by clicking on them, you can reveal two card per round, your opponent too.
-        <br/>
-        Once you revealed cards, if they match then you gain a point. You&apos;ll also see the cards revealed by your opponent.
-        <br/>
-        Game is over once all cards are revealed. Player with most points wins!
+        This is an implementation of the card game Euchre. It's extremely a work in progress at the moment.
       </p>
 
       <Divider my="md"/>
@@ -52,23 +47,18 @@ export default function Introduction() {
       <div>
         <h3 className="text-xl">Game options</h3>
 
-        <Select
-          label="Delay between rounds"
-          defaultValue="2"
-          onChange={(delay) => setDelayBetweenRounds(+delay!)}
-          data={[
-            {value: '1', label: '1 second'},
-            {value: '2', label: '2 seconds'},
-            {value: '3', label: '3 seconds'},
-            {value: '4', label: '4 seconds'},
-            {value: '5', label: '5 seconds'},
-          ]}
+        <TextInput
+          placeholder="Enter your name"
+          label="Your name"
+          value={playerName}
+          onChange={setPlayerName}
+          required
         />
       </div>
 
-      <div className="mt-5 text-center flex justify-between">
-        <button className="btn" onClick={() => onCreateLobby('solo')}>Create solo lobby</button>
-        <button className="btn" onClick={() => onCreateLobby('duo')}>Create duo lobby</button>
+      <div className="mt-5 text-center flex justify-evenly">
+        <button className="btn" onClick={() => onCreateLobby()}>Create game</button>
+        {/* <button className="btn" onClick={() => onCreateLobby()}>Join game</button> */}
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { ServerEvents } from '@shared/server/ServerEvents';
 export type AuthenticatedSocket = Socket & {
   data: {
     lobby: null | Lobby;
+    playerName: null | string;
   };
 
   emit: <T>(ev: ServerEvents, data: T) => boolean;

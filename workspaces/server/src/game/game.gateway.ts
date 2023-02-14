@@ -35,7 +35,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     // Pass server instance to managers
     this.lobbyManager.server = server;
 
-    this.logger.log('Game server initialized !');
+    this.logger.log('Game server initialized!');
   }
 
   async handleConnection(client: Socket, ...args: any[]): Promise<void>
@@ -61,8 +61,8 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage(ClientEvents.LobbyCreate)
   onLobbyCreate(client: AuthenticatedSocket, data: LobbyCreateDto): WsResponse<ServerPayloads[ServerEvents.GameMessage]>
   {
-    const lobby = this.lobbyManager.createLobby(data.mode, data.delayBetweenRounds);
-    lobby.addClient(client);
+    const lobby = this.lobbyManager.createLobby();
+    lobby.addClient(client, data.playerName);
 
     return {
       event: ServerEvents.GameMessage,
@@ -76,7 +76,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage(ClientEvents.LobbyJoin)
   onLobbyJoin(client: AuthenticatedSocket, data: LobbyJoinDto): void
   {
-    this.lobbyManager.joinLobby(data.lobbyId, client);
+    this.lobbyManager.joinLobby(data.lobbyId, client, data.playerName);
   }
 
   @SubscribeMessage(ClientEvents.LobbyLeave)

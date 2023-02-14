@@ -51,8 +51,6 @@ export default function Game() {
     sm.emit({
       event: ClientEvents.LobbyCreate,
       data: {
-        mode: currentLobbyState.mode,
-        delayBetweenRounds: currentLobbyState.delayBetweenRounds,
       },
     });
 
@@ -79,8 +77,7 @@ export default function Game() {
             : (<span>Round {currentLobbyState.currentRound}</span>)
           }
         </Badge>
-
-        {currentLobbyState.mode === 'duo' && <Badge size="xl" color="red">Opponent score: {opponentScore}</Badge>}
+        <Badge size="xl" color="red">Opponent score: {opponentScore}</Badge>
       </div>
 
       {currentLobbyState.isSuspended && (

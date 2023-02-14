@@ -1,4 +1,4 @@
-import { Cards } from '@shared/common/Cards';
+import { Cards, CardStates } from '@shared/common/Cards';
 import { Socket } from 'socket.io';
 import { CardStateDefinition } from '@shared/common/types';
 
@@ -9,6 +9,7 @@ export class CardState
     public isRevealed: boolean = false,
     public isLocked: boolean = false,
     public ownerId: Socket['id'] | null = null,
+    public state: CardStates | null = null,
   )
   {
   }
@@ -18,6 +19,7 @@ export class CardState
     return {
       card: this.isRevealed ? this.card : null,
       owner: this.ownerId,
+      state: this.state,
     };
   }
 }

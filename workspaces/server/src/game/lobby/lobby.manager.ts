@@ -6,7 +6,6 @@ import { SocketExceptions } from '@shared/server/SocketExceptions';
 import { LOBBY_MAX_LIFETIME } from '@app/game/constants';
 import { ServerEvents } from '@shared/server/ServerEvents';
 import { ServerPayloads } from '@shared/server/ServerPayloads';
-import { LobbyMode } from '@app/game/lobby/types';
 import { Cron } from '@nestjs/schedule';
 
 export class LobbyManager
@@ -14,6 +13,7 @@ export class LobbyManager
   public server: Server;
 
   private readonly lobbies: Map<Lobby['id'], Lobby> = new Map<Lobby['id'], Lobby>();
+
 
   public initializeSocket(client: AuthenticatedSocket): void
   {
@@ -25,30 +25,16 @@ export class LobbyManager
     client.data.lobby?.removeClient(client);
   }
 
-  public createLobby(mode: LobbyMode, delayBetweenRounds: number): Lobby
+  public createLobby(): Lobby
   {
-    let maxClients = 2;
-
-    switch (mode) {
-      case 'solo':
-        maxClients = 1;
-        break;
-
-      case 'duo':
-        maxClients = 2;
-        break;
-    }
-
-    const lobby = new Lobby(this.server, maxClients);
-
-    lobby.instance.delayBetweenRounds = delayBetweenRounds;
+    const lobby = new Lobby(this.server);
 
     this.lobbies.set(lobby.id, lobby);
 
     return lobby;
   }
 
-  public joinLobby(lobbyId: string, client: AuthenticatedSocket): void
+  public joinLobby(lobbyId: string, client: AuthenticatedSocket, playerName: string): void
   {
     const lobby = this.lobbies.get(lobbyId);
 
@@ -60,7 +46,7 @@ export class LobbyManager
       throw new ServerException(SocketExceptions.LobbyError, 'Lobby already full');
     }
 
-    lobby.addClient(client);
+    lobby.addClient(client, playerName);
   }
 
   // Periodically clean up lobbies
